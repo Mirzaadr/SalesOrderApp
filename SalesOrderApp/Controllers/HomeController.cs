@@ -4,6 +4,8 @@ using System.Diagnostics;
 using SalesOrderApp.Data;
 using Microsoft.EntityFrameworkCore;
 using SalesOrderApp.Services;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using ClosedXML.Excel;
 
 namespace SalesOrderApp.Controllers
 {
@@ -35,6 +37,57 @@ namespace SalesOrderApp.Controllers
             return View(viewModel);
         }
 
+        public async Task<IActionResult> Create()
+        {
+            //var customers = await _service.GetCustomersAsync();
+            ViewBag.Customers = await PopulateCustomerList();
+
+            return View("SalesOrderForm", new SoOrderViewModel());
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Create([Bind("OrderNo,OrderDate,Address,Items,ComCustomerId")] SoOrderViewModel order)
+        {
+            if (!ModelState.IsValid)
+            {
+                ViewBag.Customers = await PopulateCustomerList();
+                return View(order);
+            }
+
+            SoOrder newOrder = new SoOrder()
+            {
+                OrderNo = order.OrderNo,
+                OrderDate = order.OrderDate,
+                ComCustomerId = order.ComCustomerId,
+                Address = order.Address,
+                Items = order.Items.Select(e => new SoItem()
+                {
+                    ItemName = e.ItemName,
+                    Quantity = e.Quantity,
+                    Price = e.Price,
+                    SoOrderId = order.SoOrderId,
+                }).ToList(),
+            };
+
+            try
+            {
+                var success = await _service.SaveAsync(newOrder);
+                if (!success) {
+                    ViewBag.Customers = await PopulateCustomerList();
+                    return View(order);
+                }
+
+                return RedirectToAction("Index");
+            } catch (Exception ex)
+            {
+                ModelState.AddModelError(ex.Message, "An error occurred while saving the order. Please try again.");
+            }
+
+            ViewBag.Customers = await PopulateCustomerList();
+            return View(order);
+
+        }
+
         public async Task<IActionResult> Edit(long id)
         {
             var order = await _service.GetOrderAsync(id);
@@ -58,7 +111,7 @@ namespace SalesOrderApp.Controllers
                     Price = i.Price
                 }).ToList(),
             };
-            //return View("SalesOrderForm", viewModel);
+            ViewBag.Customers = await PopulateCustomerList();
             return View(viewModel);
         }
 
@@ -91,7 +144,11 @@ namespace SalesOrderApp.Controllers
                 try
                 {
                     var success = await _service.SaveAsync(newOrder);
-                    if (!success) return View(order);
+                    if (!success)
+                    {
+                        ViewBag.Customers = await PopulateCustomerList();
+                        return View(order);
+                    }
 
                     return RedirectToAction(nameof(Index));
                 }
@@ -107,7 +164,47 @@ namespace SalesOrderApp.Controllers
                     }
                 }
             }
+
+            ViewBag.Customers = await PopulateCustomerList();
             return View(order);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> ExportToExcel()
+        {
+            var orders = await _service.GetAllOrdersAsync();
+
+            using var workbook = new XLWorkbook();
+            var worksheet = workbook.Worksheets.Add("Sales Orders");
+
+            // Headers
+            worksheet.Cell(1, 1).Value = "Order No";
+            worksheet.Cell(1, 2).Value = "Order Date";
+            worksheet.Cell(1, 3).Value = "Customer";
+            worksheet.Cell(1, 4).Value = "Address";
+
+            // Data
+            int row = 2;
+            foreach (var order in orders)
+            {
+                worksheet.Cell(row, 1).Value = order.SoOrderId;
+                worksheet.Cell(row, 2).Value = order.OrderNo;
+                worksheet.Cell(row, 3).Value = order.OrderDate.ToString("yyyy-MM-dd");
+                worksheet.Cell(row, 4).Value = order.ComCustomer?.CustomerName ?? "N/A";
+                worksheet.Cell(row, 5).Value = order.Address;
+                row++;
+            }
+
+            // Optional: adjust column widths
+            worksheet.Columns().AdjustToContents();
+
+            using var stream = new MemoryStream();
+            workbook.SaveAs(stream);
+            stream.Position = 0;
+
+            return File(stream.ToArray(),
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                $"SalesOrders_{DateTime.Now:yyyyMMddHHmmss}.xlsx");
         }
 
         public IActionResult Privacy()
@@ -121,15 +218,16 @@ namespace SalesOrderApp.Controllers
             return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
         }
 
-        //private void PopulateCustomerList(SoOrderViewModel model)
-        //{
-        //    model.Customers = _dbContext.ComCustomers
-        //        .Select(c => new Selec
-        //        {
-        //            Value = c.Id.ToString(),
-        //            Text = c.Name
-        //        })
-        //        .ToList();
-        //}
+        private async Task<List<SelectListItem>> PopulateCustomerList()
+        {
+            var customers = await _service.GetCustomersAsync();
+            return customers
+                .Select(c => new SelectListItem
+                {
+                    Value = c.ComCustomerId.ToString(),
+                    Text = c.CustomerName
+                })
+                .ToList();
+        }
     }
 }

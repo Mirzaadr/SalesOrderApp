@@ -9,8 +9,8 @@ namespace SalesOrderApp.Services
         Task<int> GetTotalOrders(string? keywords, DateTime? dateTime);
         Task<SoOrder?> GetOrderAsync(long id);
         Task<bool> SaveAsync(SoOrder order);
-        //Task DeleteItemAsync(int itemId);
-        //Task<List<ComCustomer>> GetCustomersAsync();
+        Task<bool> DeleteAsync(long orderId);
+        Task<List<ComCustomer>> GetCustomersAsync();
         bool OrderExists(long id);
         bool ItemExists(long id, string name);
 

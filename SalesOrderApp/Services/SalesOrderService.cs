@@ -109,5 +109,15 @@ namespace SalesOrderApp.Services
             await _dbContext.SaveChangesAsync();
             return true;
         }
+
+        public async Task<bool> DeleteAsync(long newOrder)
+        {
+            return false;
+        }
+
+        public async Task<List<ComCustomer>> GetCustomersAsync()
+        {
+            return await _dbContext.ComCustomers.ToListAsync();
+        }
     }
 }

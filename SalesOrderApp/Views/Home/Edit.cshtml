@@ -1,6 +1,6 @@
 ﻿@model SoOrderViewModel
 @{
-    ViewData["Title"] = "Edit - Sales Order";
+    ViewData["Title"] = "Edit";
 }
 
 <div class="container mt-4">
@@ -23,7 +23,7 @@
             <div class="col-md">
                 <div class="mb-3">
                     <label asp-for="ComCustomerId" class="form-label">Customer</label>
-                    <input asp-for="ComCustomerId" class="form-control" />
+                    <select asp-for="ComCustomerId" asp-items="ViewBag.Customers" class="form-select"></select>
                     <span asp-validation-for="ComCustomerId" class="text-danger"></span>
                 </div>
                 <div class="mb-3">
@@ -39,11 +39,11 @@
             <thead class="table-light">
                 <tr>
                     <th style="width: 50px;">#</th>
-                    <th style="width: 160px;">Actions</th>
+                    <th style="width: 100px;">Actions</th>
                     <th>Item Name</th>
                     <th>Quantity</th>
                     <th>Price</th>
-                    <th>Total</th>
+                    <th style="width: 100px;">Total</th>
                 </tr>
             </thead>
             <tbody>
@@ -54,8 +54,8 @@
                         <input type="hidden" name="Items[@i].SoOrderId" value="@Model.SoOrderId" />
                         <td class="row-number">@(@i + 1)</td>
                         <td>
-                            <button onclick="editRow(this)"><img src="~/assets/write.png"/></button>
-                            <button onclick="deleteRow(this)"><img src="~/assets/trash.png"/></button>
+                            <button type="button" onclick="editRow(this)" class="btn-link"><img src="~/assets/write.png"/></button>
+                            <button type="button" onclick="deleteRow(this)" class="btn-link"><img src="~/assets/trash.png"/></button>
                         </td>
                         <td>
                             <span class="view-mode">@Model.Items[i].ItemName</span>
@@ -93,169 +93,5 @@
 </div>
 
 @section Scripts {
-    <script>
-        let editingIndex = null;
-
-        function toggleRowMode(row, isEditing) {
-            const viewElems = row.querySelectorAll('.view-mode');
-            const editElems = row.querySelectorAll('.edit-mode');
-            viewElems.forEach(el => el.style.display = isEditing ? 'none' : '');
-            editElems.forEach(el => el.style.display = isEditing ? '' : 'none');
-        }
-
-        function editRow(btn) {
-            if (editingIndex !== null) return;
-
-            const row = btn.closest('tr');
-            toggleRowMode(row, true);
-            editingIndex = row.rowIndex;
-
-            const actionCell = row.cells[1];
-            actionCell.innerHTML = `
-                <button onclick="saveRow(this)"><img src="/assets/disk.png"/></button>
-                <button onclick="cancelRow(this)"><img src="/assets/close.png"/></button>
-            `;
-        }
-
-        function saveRow(btn) {
-            const row = btn.closest('tr');
-            const inputs = row.querySelectorAll('.edit-mode');
-            inputs.forEach(input => {
-                const span = input.previousElementSibling;
-                span.textContent = input.value;
-            });
-
-            toggleRowMode(row, false);
-
-            const actionCell = row.cells[1];
-            actionCell.innerHTML = `
-                <button onclick="editRow(this)"><img src="/assets/write.png"/></button>
-                <button onclick="deleteRow(this)"><img src="/assets/trash.png"/></button>
-            `;
-
-            editingIndex = null;
-            recalculateTotal(row);
-            updateRowNumbers();
-            updateTotals();
-        }
-
-        function cancelRow(btn) {
-            const row = btn.closest('tr');
-            const inputs = row.querySelectorAll('.edit-mode');
-
-            inputs.forEach(input => {
-                const span = input.previousElementSibling;
-                input.value = span.textContent;
-            });
-
-            toggleRowMode(row, false);
-
-            const actionCell = row.cells[1];
-            actionCell.innerHTML = `
-                <button onclick="editRow(this)"><img src="/assets/write.png"/></button>
-                <button onclick="deleteRow(this)"><img src="/assets/trash.png"/></button>
-            `;
-
-            recalculateTotal(row);
-            editingIndex = null;
-        }
-
-        function deleteRow(btn) {
-            const row = btn.closest('tr');
-            row.remove();
-            editingIndex = null;
-
-            reindexItems();
-            updateRowNumbers();
-        }
-
-        function addNewRow() {
-            if (editingIndex !== null) return;
-
-            const table = document.getElementById('itemsTable').querySelector('tbody');
-            const index = table.rows.length;
-            const orderID = document.getElementById('SoOrderId').value;
-
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <input type="hidden" name="Items[${index}].SoOrderId" value="${orderID}" />
-                <td class="row-number">${index + 1}</td>
-                <td>
-                    <button onclick="saveRow(this)"><img src="/assets/disk.png"/></button>
-                    <button onclick="cancelRow(this)"><img src="/assets/close.png"/></button>
-                </td>
-                <td>
-                    <span class="view-mode" style="display: none;"></span>
-                    <input class="form-control edit-mode" name="Items[${index}].ItemName" />
-                </td>
-                <td>
-                    <span class="view-mode" style="display: none;"></span>
-                    <input class="form-control edit-mode item-qty" name="Items[${index}].Quantity" type="number" />
-                </td>
-                <td>
-                    <span class="view-mode" style="display: none;"></span>
-                    <input class="form-control edit-mode item-price" name="Items[${index}].Price" type="number" step="0.1" />
-                </td>
-                <td>
-                    <span name="Items[${index}].Total" disabled class="item-total bg-light" ></span>
-                </td>
-            `;
-
-            table.appendChild(row);
-            editingIndex = row.rowIndex;
-
-            row.querySelectorAll('.item-qty, .item-price').forEach(input => {
-                input.addEventListener('input', () => recalculateTotal(row));
-            });
-        }
-
-        function updateRowNumbers() {
-            const rows = document.querySelectorAll('#itemsTable tbody tr');
-            rows.forEach((row, index) => {
-                row.querySelector('.row-number').textContent = index + 1;
-            });
-        }
-
-        function reindexItems() {
-            $('#itemsTable tbody tr').each(function (index) {
-                $(this).find('input, select, textarea').each(function () {
-                    const name = $(this).attr('name');
-                    if (name) {
-                        const newName = name.replace(/\[\d+\]/, `[${index}]`);
-                        $(this).attr('name', newName);
-                    }
-                });
-            });
-        }
-
-        function recalculateTotal(row) {
-            const qty = parseFloat(row.querySelector('.item-qty').value) || 0;
-            const price = parseFloat(row.querySelector('.item-price').value) || 0;
-            row.querySelector('.item-total').textContent = (qty * price).toFixed(2);
-        }
-
-        function updateTotals() {
-            let totalQty = 0;
-            let totalPrice = 0;
-    
-            document.querySelectorAll('#itemsTable tbody tr').forEach(row => {
-                let qty = parseFloat(row.querySelector(".item-qty")?.value || 0);
-                let price = parseFloat(row.querySelector(".item-price")?.value || 0);
-    
-                if (!isNaN(qty)) totalQty += qty;
-                if (!isNaN(price) && !isNaN(qty)) totalPrice += price * qty;
-            });
-    
-            document.getElementById("totalQuantity").textContent = totalQty;
-            document.getElementById("totalPrice").textContent = totalPrice.toFixed(2);
-        }
-
-
-        document.querySelectorAll('.item-qty, .item-price').forEach(input => {
-            input.addEventListener('input', function () {
-                const row = input.closest('tr');
-                recalculateTotal(row);
-            });
-        });
-    </script>
+    <script src="~/js/order-form.js"></script>
 }
