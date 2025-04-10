@@ -1,0 +1,81 @@
+﻿@model SoOrderPageViewModel
+@{
+    ViewData["Title"] = "Home Page";
+    int startItem = ((Model.PageNumber - 1) * Model.PageSize) + 1;
+    int endItem = Math.Min(startItem + Model.PageSize - 1, Model.TotalCount);
+}
+
+<div class="card-body bg-light">
+            <!-- Search Form -->
+            <form class="row g-3 mb-4" method="get" asp-action="Index">
+                <div class="col-md-4">
+                    <label for="keywords" class="form-label fw-semibold">Keywords</label>
+                    <input type="text" name="keywords" id="keywords" class="form-control" placeholder="Input Here" value="@Model.Keywords">
+                </div>
+                <div class="col-md-4">
+                    <label for="orderDate" class="form-label fw-semibold">Order Date</label>
+                    <input type="date" name="orderDate" id="orderDate" class="form-control" value="@Model.OrderDate">
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
+                    <button type="submit" class="btn btn-dark">Search</button>
+                </div>
+            </form>
+
+            <!-- Action Buttons -->
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div class="btn-group">
+                    <a href="@Url.Action("Create")" class="btn btn-danger">Add New Data</a>
+                    <a href="@Url.Action("ExportToExcel")" class="btn btn-success">Export To Excel</a>
+                </div>
+            </div>
+
+            <!-- Table -->
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover text-center">
+                    <thead class="table-primary">
+                        <tr>
+                            <th>No</th>
+                            <th>Action</th>
+                            <th>Sales Order</th>
+                            <th>Order Date</th>
+                            <th>Customer</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model.Orders) {
+                            <tr class="hover:bg-gray-100">
+                                <td>
+                                    @Html.DisplayFor(modelItem => item.SoOrderId)
+                                </td>
+                                <td>
+                                    <a asp-action="Edit" asp-route-id="@item.SoOrderId"><img src="~/assets/write.png"/></a> |
+                                    <a asp-action="Delete" asp-route-id="@item.SoOrderId"><img src="~/assets/trash.png"/></a>
+                                </td>
+                                <td>
+                                    @Html.DisplayFor(modelItem => item.OrderNo)
+                                </td>
+                                <td>
+                                    @Html.DisplayFor(modelItem => item.OrderDate)
+                                </td>
+                                <td>
+                                    @Html.DisplayFor(modelItem => item.ComCustomer.CustomerName)
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            <nav class="d-flex justify-content-between align-items-center mt-4">
+                <ul class="pagination mb-0">
+                    @for (int i = 1; i <= Model.TotalPages; i++)
+                    {
+                        <li class="page-item @(i == Model.PageNumber ? "active" : "")">
+                            <a class="page-link" href="@Url.Action("Index", new { page = i, pageSize = Model.PageSize, keywords = Model.Keywords, orderDate = Model.OrderDate })">@i</a>
+                        </li>
+                    }
+                </ul>
+                <span>@startItem - @endItem of @Model.TotalCount items</span>
+            </nav>
+        </div>
