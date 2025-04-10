@@ -5,7 +5,8 @@ A Simple app that shows Sales order and the items associated with it. This web-b
 ## Getting Started
 - Use database schema ```So Schema.Sql``` to setup the database
 - Update the connection string inside the ```appsettings.json```
-  json```
+  json
+  ```
   {
   ...
     "ConnectionStrings": {
