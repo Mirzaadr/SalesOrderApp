@@ -16,7 +16,8 @@ A Simple app that shows Sales order and the items associated with it. This web-b
   ```
 - ```Ctrl+F5``` to run the app in Visual Studio, or run ```dotnet run``` from command line
 
-The published app can be found [here](https://github.com/Mirzaadr/SalesOrderApp/releases/tag/dotnet).
+## Published Version
+The published app can be found [here](https://github.com/Mirzaadr/SalesOrderApp/releases/tag/dotnet).  
 To run the published version simply update the connection string inside ```appsettings.json``` and publish the files to IIS.
 
 ## Tech
