@@ -170,9 +170,9 @@ namespace SalesOrderApp.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> ExportToExcel()
+        public async Task<IActionResult> ExportToExcel(SoOrderPageViewModel viewModel)
         {
-            var orders = await _service.GetAllOrdersAsync();
+            var orders = await _service.GetAllOrdersAsync(viewModel.Keywords, viewModel.OrderDate);
 
             using var workbook = new XLWorkbook();
             var worksheet = workbook.Worksheets.Add("Sales Orders");

@@ -5,6 +5,7 @@ namespace SalesOrderApp.Services
     public interface ISalesOrderService
     {
         Task<List<SoOrder>> GetAllOrdersAsync();
+        Task<List<SoOrder>> GetAllOrdersAsync(string? keywords, DateTime? orderDate);
         Task<List<SoOrder>> GetAllOrdersAsync(string? keywords, DateTime? orderDate, int page, int pageSize);
         Task<int> GetTotalOrders(string? keywords, DateTime? dateTime);
         Task<SoOrder?> GetOrderAsync(long id);

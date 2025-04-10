@@ -19,7 +19,7 @@ namespace SalesOrderApp.Services
             return await orders.Include(o => o.ComCustomer).ToListAsync();
         }
 
-        public async Task<int> GetTotalOrders(string? keywords, DateTime? dateTime)
+        public async Task<List<SoOrder>> GetAllOrdersAsync(string? keywords, DateTime? dateTime)
         {
             var orders = from o in _dbContext.SoOrders select o;
             if (!String.IsNullOrEmpty(keywords))
@@ -30,7 +30,7 @@ namespace SalesOrderApp.Services
             {
                 orders = orders.Where(o => o.OrderDate == dateTime);
             }
-            return (await orders.ToListAsync()).Count();
+            return await orders.Include(o => o.ComCustomer).ToListAsync();
         }
 
         public async Task<List<SoOrder>> GetAllOrdersAsync(string? keywords, DateTime? dateTime, int page=1, int pageSize=10)
@@ -45,6 +45,20 @@ namespace SalesOrderApp.Services
                 orders = orders.Where(o => o.OrderDate == dateTime);
             }
             return await orders.Include(o => o.ComCustomer).Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
+        }
+
+        public async Task<int> GetTotalOrders(string? keywords, DateTime? dateTime)
+        {
+            var orders = from o in _dbContext.SoOrders select o;
+            if (!String.IsNullOrEmpty(keywords))
+            {
+                orders = orders.Where(o => o.OrderNo.Contains(keywords) || o.ComCustomer.CustomerName.Contains(keywords));
+            }
+            if (dateTime != null)
+            {
+                orders = orders.Where(o => o.OrderDate == dateTime);
+            }
+            return (await orders.ToListAsync()).Count();
         }
 
         public async Task<SoOrder?> GetOrderAsync(long id)
